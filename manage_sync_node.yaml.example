@@ -1,0 +1,15 @@
+---
+  dbpass: dbpassword-goes-here
+  token_secret: master-token-server-secret-goes-here
+  ami_map:
+    us-east-1: ami-059ea16c
+    us-west-2: ami-6afe9e5a
+  security_groups:
+    - open-everything
+  key_pair_name: 20130730-svcops-base-key-dev
+  instance_type: c3.2xlarge
+  defaults:
+    dbserver: tokenserver.123456789012.us-east-1.rds.amazonaws.com
+    dbuser: tokenserver
+    dbname: token_stage
+    region: us-east-1
