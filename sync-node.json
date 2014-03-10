@@ -14,7 +14,7 @@
       },
       "Path":{
          "Description":"AWS Path",
-         "Default":"/sync/",
+         "Default":"/sync_1_5/",
          "Type":"String"
       },
       "SyncNodeInstanceType":{
@@ -41,7 +41,7 @@
          "Type":"String"
       },
       "ProvisioningVersion":{
-         "Description":"Puppet code version. The RPM version of puppet-config-common and puppet-config-fxa used to provision the stack. This value can be either a version number (e.g. 20131220135603) or 'latest' to get the newest code. Versions can be found here : https://github.com/mozilla-services/puppet-config/tags",
+         "Description":"Puppet code version. The RPM version of puppet-config-common and puppet-config-sync_1_5 used to provision the stack. This value can be either a version number (e.g. 20131220135603) or 'latest' to get the newest code. Versions can be found here : https://github.com/mozilla-services/puppet-config/tags",
          "Default":"latest",
          "AllowedPattern":"[0-9]{14}|latest",
          "ConstraintDescription":"must either be the string 'latest' or an all numeric rpm version like 20131220135603",
@@ -176,9 +176,9 @@
                                     "",
                                     [
                                        "arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",
-                                       "fxa",
+                                       "sync_1_5",
                                        ".",
-                                       "auth_server",
+                                       "all_in_one_node",
                                        ".",
                                        {
                                           "Ref":"Environment"
@@ -196,9 +196,9 @@
                                     "",
                                     [
                                        "arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",
-                                       "fxa",
+                                       "sync_1_5",
                                        ".",
-                                       "auth_server",
+                                       "all_in_one_node",
                                        ".",
                                        {
                                           "Ref":"Environment"
@@ -212,9 +212,9 @@
                                     "",
                                     [
                                        "arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",
-                                       "fxa",
+                                       "sync_1_5",
                                        ".",
-                                       "auth_server",
+                                       "all_in_one_node",
                                        ".yaml"
                                     ]
                                  ]
@@ -224,7 +224,7 @@
                                     "",
                                     [
                                        "arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",
-                                       "fxa",
+                                       "sync_1_5",
                                        ".",
                                        {
                                           "Ref":"Environment"
@@ -242,7 +242,7 @@
                                     "",
                                     [
                                        "arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",
-                                       "fxa",
+                                       "sync_1_5",
                                        ".",
                                        {
                                           "Ref":"Environment"
@@ -256,7 +256,7 @@
                                     "",
                                     [
                                        "arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",
-                                       "fxa",
+                                       "sync_1_5",
                                        ".yaml"
                                     ]
                                  ]
