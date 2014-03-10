@@ -1,32 +1,6 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python2.6
 """Create, modify and delete Sync nodes
 
-
-
-[Defaults]
-
-
-[Main]
-; master token password
-token_secret=example master token secret
-
-; MySQL Database user's password
-dbpass=password goes here
-
-; Ami map
-; SvcOps SL 6.3 20140128
-ami.us-west-2=ami-6afe9e5a
-; SvcOps SL 6.3 20140128
-ami.us-east-1=ami-059ea16c
-
-; EC2 keypair name
-key_pair_name=20130730-svcops-base-key-dev
-
-; EC2 sync storage server instance type
-instance_type=c3.4xlarge
-
-; Sync storage server security groups
-security_groups.1=open-everything
 
 """
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -36,20 +10,27 @@ security_groups.1=open-everything
 # sudo easy_install https://github.com/mozilla-services/tokenlib/archive/master.zip
 # wget https://raw.githubusercontent.com/mozilla-services/mozservices/master/mozsvc/secrets.py
 import sys
-req_version = (2,7)
+req_version = (2,6)
 cur_version = sys.version_info
 if cur_version < req_version:
-    print("This tool requires Python 2.7, please upgrade and run this again.")
+    print("This tool requires Python 2.6, please upgrade and run this again.")
+    sys.exit(1)
+
+try:
+    import importlib
+except ImportError:
+    print("The module importlib doesn't appear to be installed. Try running \"sudo yum install python-importlib\"")
     sys.exit(1)
 
 import importlib
-for module in [('argparse', 'Try running "sudo pip install argparse"'),
+for module in [('argparse', 'Try running "sudo install python-argparse"'),
                ('tokenlib', 'Try running "sudo easy_install https://github.com/mozilla-services/tokenlib/archive/master.zip"'),
                ('secrets', 'Try fetching the file with "wget https://raw.githubusercontent.com/mozilla-services/mozservices/master/mozsvc/secrets.py"'),
-               ('MySQLdb', 'Try running "sudo yum install python-mysqldb"'),
+               ('MySQLdb', 'Try running "sudo yum install MySQL-python"'),
+               ('boto', 'Try running "sudo pip install -U boto"'),
                ('boto.ec2', 'Try running "sudo pip install -U boto"')]:
     try:
-        mod = importlib.import_module(module[0], package=None)
+        globals()[module[0]] = importlib.import_module(module[0], package=None)
     except ImportError:
         print("The module %s doesn't appear to be installed. %s" % module)
         sys.exit(1)
@@ -76,23 +57,23 @@ def type_filename(filename):
        return filename
    
 def collect_arguments():
-    defaults = {"tokensecret" : "default master token secret",
-                "loglevel" : "INFO"}
+    defaults = {"loglevel" : "INFO"}
     all_regions = [x.name for x in 
                    boto.ec2.connect_to_region('us-east-1').get_all_regions()]
     conf_parser = argparse.ArgumentParser(
         # Turn off help, so we print all options in response to -h
             add_help=False
             )
-    conf_parser.add_argument("-c", "--config", required=True, 
+    conf_parser.add_argument("-c", "--config", 
                              type=type_filename, metavar="FILE", 
                              help="Specify a YAML configuration file")
     args, remaining_argv = conf_parser.parse_known_args()
 
-    with open(args.config) as f:
-        config = yaml.load(f)
-    if 'defaults' in config and type(config['defaults']) == dict:
-        defaults = config['defaults']
+    if args.config:
+        with open(args.config) as f:
+            config = yaml.load(f)
+        if 'defaults' in config and type(config['defaults']) == dict:
+            defaults = config['defaults']
     
     # Don't suppress add_help here so it will handle -h
     parser = argparse.ArgumentParser(
@@ -119,14 +100,14 @@ def collect_arguments():
     parser.add_argument('-l', '--loglevel', type=type_loglevel,
                    help='Log level verbosity')
     result = parser.parse_args(remaining_argv)
-
-    config.update(result)
+    config.update(vars(result))
     return config
 
+class SyncNode:
     def __init__(self, config):
         self.config = config
         if config['action'] == 'create':
-            create()
+            self.create()
 
     def get_next_available_node_name(self):
         query = "SELECT node FROM nodes ORDER BY node DESC LIMIT 0,1"
@@ -150,7 +131,7 @@ def collect_arguments():
         return "https://sync-%s-%s.%s.mozaws.net" % (next_index, self.config['region'], environment)
     
     def get_node_secret(self):
-        return secrets.DerivedSecrets(self.config['token_secret']).get(self.name)
+        return secrets.DerivedSecrets(self.config['token_secret']).get(self.name)[0]
     
     def spawn_instance(self):
         conn_ec2 = boto.ec2.connect_to_region(self.config['region'])
@@ -179,13 +160,20 @@ def collect_arguments():
     
     def create(self):
         self.name = self.get_next_available_node_name()
+        logging.debug("New node name is %s" % self.name)
         self.node_secret = self.get_node_secret()
+        logging.debug("New node secret is %s" % self.node_secret)
         
-        
+    def modify(self):
+        pass
+    
+    def terminate(self):
+        pass
 
 if __name__=='__main__':
     config = collect_arguments()
     logging.basicConfig(level=config['loglevel'])
+    logging.debug(config)
     node = SyncNode(config)
     
 
