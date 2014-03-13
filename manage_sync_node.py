@@ -28,7 +28,8 @@ for module in [('argparse', 'Try running "sudo install python-argparse"'),
                ('secrets', 'Try fetching the file with "wget https://raw.githubusercontent.com/mozilla-services/mozservices/master/mozsvc/secrets.py"'),
                ('MySQLdb', 'Try running "sudo yum install MySQL-python"'),
                ('boto', 'Try running "sudo pip install -U boto"'),
-               ('boto.ec2', 'Try running "sudo pip install -U boto"')]:
+               ('boto.ec2', 'Try running "sudo pip install -U boto"'),
+               ('boto.cloudformation', 'Try running "sudo pip install -U boto"')]:
     try:
         globals()[module[0]] = importlib.import_module(module[0], package=None)
     except ImportError:
@@ -38,6 +39,7 @@ import logging
 import os
 import re
 import yaml
+import time
 
 def type_loglevel(level):
     try:
@@ -73,7 +75,7 @@ def collect_arguments():
         with open(args.config) as f:
             config = yaml.load(f)
         if 'defaults' in config and type(config['defaults']) == dict:
-            defaults = config['defaults']
+            defaults.update(config['defaults'])
     
     # Don't suppress add_help here so it will handle -h
     parser = argparse.ArgumentParser(
@@ -90,6 +92,8 @@ def collect_arguments():
     parser.add_argument('-n', '--nodename', 
                        help="Node name")
     parser.add_argument('-r', '--region', choices = all_regions,
+                       help="AWS Region")
+    parser.add_argument('-e', '--environment', choices = ['prod', 'stage', 'dev'],
                        help="AWS Region")
     parser.add_argument('--dbserver', 
                        help="Host name of the MySQL token server database")
@@ -108,6 +112,10 @@ class SyncNode:
         self.config = config
         if config['action'] == 'create':
             self.create()
+    
+    def wait(self):
+        logging.info("Waiting for %s seconds" % self.config['wait_interval'])
+        time.sleep(self.config['wait_interval'])
 
     def get_next_available_node_name(self):
         query = "SELECT node FROM nodes ORDER BY node DESC LIMIT 0,1"
@@ -128,41 +136,68 @@ class SyncNode:
                 "in the %s database doesn't conform to the naming " +
                 "convention expected." % (result[0], self.config['dbname']))
         next_index = int(current_index) + 1
-        return "https://sync-%s-%s.%s.mozaws.net" % (next_index, self.config['region'], environment)
+        name = "syn-%s-%s" % (next_index, environment)
+        url = "https://sync-%s-%s.%s.mozaws.net" % (next_index, self.config['region'], environment)
+        return (name, url)
     
     def get_node_secret(self):
-        return secrets.DerivedSecrets(self.config['token_secret']).get(self.name)[0]
+        return secrets.DerivedSecrets(self.config['token_secret']).get(self.url)[0]
     
     def spawn_instance(self):
-        conn_ec2 = boto.ec2.connect_to_region(self.config['region'])
-        image_id = config['ami_map'][self.config['region']]
-        user_data = 'foo'
-        existing_security_groups = conn_ec2.get_all_security_groups()
-        security_group_ids = [x.id for x in existing_security_groups if x.name in self.config['security_groups']]
-        reservation = conn_ec2.run_instances(image_id = image_id,
-                                             key_name = self.config['key_pair_name'],
-                                             user_data = user_data,
-                                             instance_type = self.config['instance_type'],
-                                             security_group_ids = security_group_ids
-                                             )
-        instances = reservation.instances
-        if 0 < len(instances) < 2:
-            raise Exception("Instance creation returned reservation with %s instances" % len(instances))
-        else:
-            instance = instances[0]
-
         conn_cfn = boto.cloudformation.connect_to_region(self.config['region'])
-        stack = conn_cfn.create_stack(stack_name='foo',
-                                      template_body='foo')
-        
-        # loop and wait for provisioning of the instance to complete
-        
+        with open(self.config['cloudformation_template_filename']) as f:
+            stack_id = conn_cfn.create_stack(stack_name=self.name,
+                 template_body=f.read(),
+                 parameters=[('Environment', self.config['environment']),
+                             ('SyncNodeInstanceType', self.config['instance_type']),
+                             ('ProvisioningVersion', 'latest'),
+                             ('NodeSecret', self.node_secret)])
+
+        logging.info("Node %s being created" % self.name)
+
+        # We'll loop here to wait for the stack to finish. A better way to do
+        # this would be to have CloudFormation publish events to SNS, then
+        # subscribe an https endpoint to the SNS topic. That endpoint would
+        # be hosted on the admin server and would kick off the remainder
+        # of the tasks after stack creation
+        status='CREATE_IN_PROGRESS'
+        while status == 'CREATE_IN_PROGRESS':
+            stacks = conn_cfn.describe_stacks(stack_name_or_id=stack_id)
+            if len(stacks) > 1:
+                raise Exception("Describe stacks returned %s stacks" % len(stacks))
+            elif len(stacks) < 1:
+                logging.debug("Describe stacks returned no stacks")
+                self.wait()
+            else:
+                status = stacks[0].stack_status
+                logging.info("Stack state is %s" % status)
+                if status == 'CREATE_IN_PROGRESS':
+                    self.wait()
+        logging.info("Node created with final status %s" % status)
+        return status
+
+    def set_node_live(self):
+        return True
     
     def create(self):
-        self.name = self.get_next_available_node_name()
-        logging.debug("New node name is %s" % self.name)
+        self.name, self.url = self.get_next_available_node_name()
+        logging.debug("New node name and url are %s and %s" % (self.name, self.url))
         self.node_secret = self.get_node_secret()
         logging.debug("New node secret is %s" % self.node_secret)
+        cloudformation_status = self.spawn_instance()
+        if cloudformation_status != 'CREATE_COMPLETE':
+            logging.error("Attempt to build a sync node failed with CloudFormation result %s" % cloudformation_status)
+            sys.exit(1)
+        verification_status = self.verify()
+        if not verification_status:
+            logging.error("Verification of new node %s failed." % self.name)
+            sys.exit(1)
+        if not self.set_node_live():
+            logging.error("Attempt to set node %s live failed." % self.name)
+            sys.exit(1)
+
+    def verify(self):
+        return True
         
     def modify(self):
         pass

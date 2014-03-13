@@ -1,6 +1,7 @@
 ---
   dbpass: dbpassword-goes-here
   token_secret: master-token-server-secret-goes-here
+  wait_interval: 30
   ami_map:
     us-east-1: ami-059ea16c
     us-west-2: ami-6afe9e5a
@@ -13,3 +14,5 @@
     dbuser: tokenserver
     dbname: token_stage
     region: us-east-1
+    environment: stage
+    
