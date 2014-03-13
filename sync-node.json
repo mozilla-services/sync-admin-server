@@ -12,30 +12,39 @@
          "Default":"stage",
          "Type":"String"
       },
-      "Path":{
-         "Description":"AWS Path",
-         "Default":"/sync_1_5/",
-         "Type":"String"
-      },
       "SyncNodeInstanceType":{
          "Description":"Sync Node Instance Type",
          "Default":"m1.small",
          "AllowedValues":[
-            "t1.micro",
             "m1.small",
             "m1.medium",
             "m1.large",
             "m1.xlarge",
-            "m2.xlarge",
-            "m2.2xlarge",
-            "m2.4xlarge",
+            "m3.medium",
+            "m3.large",
             "m3.xlarge",
             "m3.2xlarge",
             "c1.medium",
             "c1.xlarge",
-            "cc1.4xlarge",
+            "c3.large",
+            "c3.xlarge",
+            "c3.2xlarge",
+            "c3.4xlarge",
+            "c3.8xlarge",
             "cc2.8xlarge",
-            "cg1.4xlarge"
+            "m2.xlarge",
+            "m2.2xlarge",
+            "m2.4xlarge",
+            "cr1.8xlarge",
+            "hi1.4xlarge",
+            "hs1.8xlarge",
+            "i2.xlarge",
+            "i2.2xlarge",
+            "i2.4xlarge",
+            "i2.8xlarge",
+            "t1.micro",
+            "cg1.4xlarge",
+            "g2.2xlarge"
          ],
          "ConstraintDescription":"must be a valid EC2 instance type.",
          "Type":"String"
@@ -45,6 +54,12 @@
          "Default":"latest",
          "AllowedPattern":"[0-9]{14}|latest",
          "ConstraintDescription":"must either be the string 'latest' or an all numeric rpm version like 20131220135603",
+         "Type":"String"
+      },
+      "NodeSecret":{
+         "Description":"Node secret used to make or verify auth-token signatures. This secret should be derived from the token servers master secret.",
+         "AllowedPattern":"[0-9a-fA-F]{64}",
+         "ConstraintDescription":"must be a 64 character hexadecimal string",
          "Type":"String"
       }
    },
@@ -94,6 +109,12 @@
          "prod":{
             "Var":"Value"
          }
+      },
+      "VariableMap":{
+         "Stack":{
+            "App":"sync_1_5",
+            "Type":"all_in_one_node"
+         }
       }
    },
    "Conditions":{
@@ -131,179 +152,22 @@
                   }
                ]
             },
-            "Path":{
-               "Ref":"Path"
-            },
+            "Path": {"Fn::Join":["",["/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},"/"]]},
             "Policies":[
                {
-                  "PolicyName":"IAMTagReadPolicy",
+                  "PolicyName":"PuppetConfigDeployIAMRequirements",
                   "PolicyDocument":{
+                     "Version":"2012-10-17",
                      "Statement":[
                         {
                            "Effect":"Allow",
                            "Action":[
-                              "EC2:DescribeTags"
-                           ],
-                           "Resource":[
-                              "*"
-                           ]
-                        }
-                     ]
-                  }
-               },
-               {
-                  "PolicyName":"IAMHieraSecretsPolicy",
-                  "PolicyDocument":{
-                     "Statement":[
-                        {
-                           "Effect":"Allow",
-                           "Action":[
-                              "S3:ListBucket"
-                           ],
-                           "Resource":[
-                              "arn:aws:s3:::net.mozaws.ops.hiera-secrets"
-                           ]
-                        },
-                        {
-                           "Effect":"Allow",
-                           "Action":[
+                              "S3:ListBucket",
                               "S3:GetObject"
                            ],
                            "Resource":[
-                              "arn:aws:s3:::net.mozaws.ops.hiera-secrets/common.yaml",
-                              {
-                                 "Fn::Join":[
-                                    "",
-                                    [
-                                       "arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",
-                                       "sync_1_5",
-                                       ".",
-                                       "all_in_one_node",
-                                       ".",
-                                       {
-                                          "Ref":"Environment"
-                                       },
-                                       ".",
-                                       {
-                                          "Ref":"AWS::StackName"
-                                       },
-                                       ".yaml"
-                                    ]
-                                 ]
-                              },
-                              {
-                                 "Fn::Join":[
-                                    "",
-                                    [
-                                       "arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",
-                                       "sync_1_5",
-                                       ".",
-                                       "all_in_one_node",
-                                       ".",
-                                       {
-                                          "Ref":"Environment"
-                                       },
-                                       ".yaml"
-                                    ]
-                                 ]
-                              },
-                              {
-                                 "Fn::Join":[
-                                    "",
-                                    [
-                                       "arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",
-                                       "sync_1_5",
-                                       ".",
-                                       "all_in_one_node",
-                                       ".yaml"
-                                    ]
-                                 ]
-                              },
-                              {
-                                 "Fn::Join":[
-                                    "",
-                                    [
-                                       "arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",
-                                       "sync_1_5",
-                                       ".",
-                                       {
-                                          "Ref":"Environment"
-                                       },
-                                       ".",
-                                       {
-                                          "Ref":"AWS::StackName"
-                                       },
-                                       ".yaml"
-                                    ]
-                                 ]
-                              },
-                              {
-                                 "Fn::Join":[
-                                    "",
-                                    [
-                                       "arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",
-                                       "sync_1_5",
-                                       ".",
-                                       {
-                                          "Ref":"Environment"
-                                       },
-                                       ".yaml"
-                                    ]
-                                 ]
-                              },
-                              {
-                                 "Fn::Join":[
-                                    "",
-                                    [
-                                       "arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",
-                                       "sync_1_5",
-                                       ".yaml"
-                                    ]
-                                 ]
-                              },
-                              {
-                                 "Fn::Join":[
-                                    "",
-                                    [
-                                       "arn:aws:s3:::net.mozaws.ops.hiera-secrets/env/",
-                                       {
-                                          "Ref":"Environment"
-                                       },
-                                       ".",
-                                       {
-                                          "Ref":"AWS::StackName"
-                                       },
-                                       ".yaml"
-                                    ]
-                                 ]
-                              },
-                              {
-                                 "Fn::Join":[
-                                    "",
-                                    [
-                                       "arn:aws:s3:::net.mozaws.ops.hiera-secrets/env/",
-                                       {
-                                          "Ref":"Environment"
-                                       },
-                                       ".yaml"
-                                    ]
-                                 ]
-                              }
-                           ]
-                        }
-                     ]
-                  }
-               },
-               {
-                  "PolicyName":"IAMPuppetRPMRepoPolicy",
-                  "PolicyDocument":{
-                     "Statement":[
-                        {
-                           "Effect":"Allow",
-                           "Action":[
-                              "S3:ListBucket"
-                           ],
-                           "Resource":[
+                              "arn:aws:s3:::net.mozaws.ops.hiera-secrets",
+                              "arn:aws:s3:::net.mozaws.prod.ops.rpmrepo-protected",
                               "arn:aws:s3:::net.mozaws.ops.rpmrepo-puppet"
                            ]
                         },
@@ -313,67 +177,26 @@
                               "S3:GetObject"
                            ],
                            "Resource":[
-                              "arn:aws:s3:::net.mozaws.ops.rpmrepo-puppet/*"
-                           ]
-                        }
-                     ]
-                  }
-               },
-               {
-                  "PolicyName":"IAMPuppetRPMProtectedRepoPolicy",
-                  "PolicyDocument":{
-                     "Statement":[
-                        {
-                           "Effect":"Allow",
-                           "Action":[
-                              "S3:ListBucket"
-                           ],
-                           "Resource":[
-                              "arn:aws:s3:::net.mozaws.prod.ops.rpmrepo-protected"
+	                           "arn:aws:s3:::net.mozaws.ops.rpmrepo-protected/*",
+	                           "arn:aws:s3:::net.mozaws.ops.rpmrepo-puppet/*",
+	                           "arn:aws:s3:::net.mozaws.ops.hiera-secrets/common.yaml",
+	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]},".",{"Ref":"Environment"},".",{"Ref":"AWS::StackName"},".","yaml"]]},
+	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]},".",{"Ref":"Environment"},".","yaml"]]},
+	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]},".","yaml"]]},
+	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Ref":"Environment"},".",{"Ref":"AWS::StackName"},".","yaml"]]},
+	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Ref":"Environment"},".","yaml"]]},
+	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".","yaml"]]},
+	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/env/",{"Ref":"Environment"},".",{"Ref":"AWS::StackName"},".","yaml"]]},
+	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/env/",{"Ref":"Environment"},".","yaml"]]}
                            ]
                         },
                         {
                            "Effect":"Allow",
                            "Action":[
-                              "S3:GetObject"
-                           ],
-                           "Resource":[
-                              "arn:aws:s3:::net.mozaws.prod.ops.rpmrepo-protected/*"
-                           ]
-                        }
-                     ]
-                  }
-               },
-               {
-                  "PolicyName":"ec2-describe-instances",
-                  "PolicyDocument":{
-                     "Statement":[
-                        {
-                           "Action":[
-                              "ec2:DescribeInstances",
+                              "ec2:DescribeTags",
                               "ec2:DescribeRegions"
                            ],
-                           "Resource":[
-                              "*"
-                           ],
-                           "Effect":"Allow"
-                        }
-                     ]
-                  }
-               },
-               {
-                  "PolicyName":"elb-describe-loadbalancers",
-                  "PolicyDocument":{
-                     "Statement":[
-                        {
-                           "Action":[
-                              "elasticloadbalancing:DescribeInstanceHealth",
-                              "elasticloadbalancing:DescribeLoadBalancers"
-                           ],
-                           "Resource":[
-                              "*"
-                           ],
-                           "Effect":"Allow"
+                           "Resource":"*"
                         }
                      ]
                   }
@@ -384,9 +207,7 @@
       "SyncNodeInstanceProfile":{
          "Type":"AWS::IAM::InstanceProfile",
          "Properties":{
-            "Path":{
-               "Ref":"Path"
-            },
+            "Path": {"Fn::Join":["",["/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},"/"]]},
             "Roles":[
                {
                   "Ref":"SyncNodeRole"
@@ -409,7 +230,7 @@
             "Tags":[
                {
                   "Key":"App",
-                  "Value":"sync_1_5"
+                  "Value":{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]}
                },
                {
                   "Key":"Env",
@@ -419,7 +240,7 @@
                },
                {
                   "Key":"Type",
-                  "Value":"all_in_one_node"
+                  "Value":{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]}
                },
                {
                   "Key":"Stack",
@@ -475,6 +296,9 @@
                },
                "stackname":{
                   "Ref":"AWS::StackName"
+               },
+               "nodesecret":{
+                  "Ref":"NodeSecret"
                }
             }
          },
@@ -513,7 +337,7 @@
             "Tags":[
                {
                   "Key":"App",
-                  "Value":"sync_1_5"
+                  "Value":{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]}
                },
                {
                   "Key":"Env",
@@ -523,7 +347,7 @@
                },
                {
                   "Key":"Type",
-                  "Value":"all_in_one_node"
+                  "Value":{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]}
                },
                {
                   "Key":"Stack",
