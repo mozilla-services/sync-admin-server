@@ -25,7 +25,8 @@ except ImportError:
 import importlib
 for module in [('argparse', 'Try running "sudo install python-argparse"'),
                ('tokenlib', 'Try running "sudo easy_install https://github.com/mozilla-services/tokenlib/archive/master.zip"'),
-               ('secrets', 'Try fetching the file with "wget https://raw.githubusercontent.com/mozilla-services/mozservices/master/mozsvc/secrets.py"'),
+               ('mozsvc', 'Try running "sudo easy_install https://github.com/mozilla-services/mozservices/archive/master.zip"'),
+               ('mozsvc.secrets', 'Try running "sudo easy_install https://github.com/mozilla-services/mozservices/archive/master.zip"'),
                ('MySQLdb', 'Try running "sudo yum install MySQL-python"'),
                ('boto', 'Try running "sudo pip install -U boto"'),
                ('boto.ec2', 'Try running "sudo pip install -U boto"'),
@@ -140,8 +141,8 @@ class SyncNode:
         url = "https://sync-%s-%s.%s.mozaws.net" % (next_index, self.config['region'], environment)
         return (name, url)
     
-    def get_node_secret(self):
-        return secrets.DerivedSecrets(self.config['token_secret']).get(self.url)[0]
+    def get_node_secrets(self):
+        return mozsvc.secrets.DerivedSecrets(self.config['token_secret']).get(self.url)
     
     def spawn_instance(self):
         conn_cfn = boto.cloudformation.connect_to_region(self.config['region'])
