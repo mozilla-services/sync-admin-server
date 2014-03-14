@@ -152,7 +152,7 @@ class SyncNode:
                  parameters=[('Environment', self.config['environment']),
                              ('SyncNodeInstanceType', self.config['instance_type']),
                              ('ProvisioningVersion', 'latest'),
-                             ('NodeSecret', self.node_secret)])
+                             ('NodeSecrets', ",".join(self.node_secrets))])
 
         logging.info("Node %s being created" % self.name)
 
@@ -183,7 +183,7 @@ class SyncNode:
     def create(self):
         self.name, self.url = self.get_next_available_node_name()
         logging.debug("New node name and url are %s and %s" % (self.name, self.url))
-        self.node_secret = self.get_node_secret()
+        self.node_secrets = self.get_node_secrets()
         logging.debug("New node secret is %s" % self.node_secret)
         cloudformation_status = self.spawn_instance()
         if cloudformation_status != 'CREATE_COMPLETE':

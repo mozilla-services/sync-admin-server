@@ -56,11 +56,9 @@
          "ConstraintDescription":"must either be the string 'latest' or an all numeric rpm version like 20131220135603",
          "Type":"String"
       },
-      "NodeSecret":{
-         "Description":"Node secret used to make or verify auth-token signatures. This secret should be derived from the token servers master secret.",
-         "AllowedPattern":"[0-9a-fA-F]{64}",
-         "ConstraintDescription":"must be a 64 character hexadecimal string",
-         "Type":"String"
+      "NodeSecrets":{
+         "Description":"Node secrets used to make or verify auth-token signatures. These secrets should be derived from the token servers master secret and be 64 character hexadecimal strings",
+         "Type":"CommaDelimitedList"
       }
    },
    "Mappings":{
@@ -277,7 +275,7 @@
                                  },
                                  "--update-secrets",
                                  "--apply",
-                                 "--apply-options \"--debug --logdest /var/log/initial_puppet_apply.log\"",
+                                 "--apply-options \"--logdest /var/log/initial_puppet_apply.log\"",
                                  "2>&1 > /var/log/initial_manage_puppet.log"
                               ]
                            ]
@@ -297,8 +295,8 @@
                "stackname":{
                   "Ref":"AWS::StackName"
                },
-               "nodesecret":{
-                  "Ref":"NodeSecret"
+               "nodesecrets":{
+                  "Ref":"NodeSecrets"
                }
             }
          },
