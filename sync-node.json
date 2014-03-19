@@ -356,6 +356,10 @@
                {
                   "Key":"Name",
                   "Value":"sync-node"
+               },
+               {
+                  "Key":"Services",
+                  "Value":"sync1.5"
                }
             ],
             "UserData":{
