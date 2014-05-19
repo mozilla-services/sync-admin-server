@@ -23,7 +23,7 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 # Get the long description from the relevant file
-with codecs.open('README.txt', encoding='utf-8') as f:
+with codecs.open(os.path.join(here, 'README.txt'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
