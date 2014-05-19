@@ -14,10 +14,8 @@
       },
       "SyncNodeInstanceType":{
          "Description":"Sync Node Instance Type",
-         "Default":"m1.small",
+         "Default":"m1.xlarge",
          "AllowedValues":[
-            "m1.small",
-            "m1.medium",
             "m1.large",
             "m1.xlarge",
             "m3.medium",
@@ -59,17 +57,21 @@
       "NodeSecrets":{
          "Description":"Node secrets used to make or verify auth-token signatures. These secrets should be derived from the token servers master secret and be 64 character hexadecimal strings",
          "Type":"CommaDelimitedList"
+      },
+      "NodeNumber":{
+         "Description":"Node number which will start the DNS name for the node",
+         "AllowedPattern":"[0-9]*",
+         "ConstraintDescription":"must be a string consisting of digits",
+         "Type":"String"
+      },
+      "AMI":{
+         "Description":"AMI ID to use to create the instance",
+         "AllowedPattern":"ami-[0-9a-f]{8}",
+         "ConstraintDescription":"must be a valid AMI ID in the form of ami-56789abc",
+         "Type":"String"
       }
    },
    "Mappings":{
-      "RegionMap":{
-         "us-west-2":{
-            "SyncNodeAMI":"ami-6afe9e5a"
-         },
-         "us-east-1":{
-            "SyncNodeAMI":"ami-059ea16c"
-         }
-      },
       "AccountMap":{
          "142069644989":{
             "SyncNodeKeyPair":"20130730-svcops-base-key-dev",
@@ -99,13 +101,13 @@
       },
       "EnvironmentMap":{
          "dev":{
-            "Var":"Value"
+            "DNSZone":"dev.mozaws.net."
          },
          "stage":{
-            "Var":"Value"
+            "DNSZone":"stage.mozaws.net."
          },
          "prod":{
-            "Var":"Value"
+            "DNSZone":"sync.services.mozilla.com."
          }
       },
       "VariableMap":{
@@ -249,6 +251,10 @@
                {
                   "Key":"Name",
                   "Value":"sync-node"
+               },
+               {
+                  "Key":"Services",
+                  "Value":"sync1.5"
                }
             ]
          }
@@ -305,13 +311,7 @@
                "Ref":"SyncNodeInstanceProfile"
             },
             "ImageId":{
-               "Fn::FindInMap":[
-                  "RegionMap",
-                  {
-                     "Ref":"AWS::Region"
-                  },
-                  "SyncNodeAMI"
-               ]
+                "Ref":"AMI"
             },
             "InstanceType":{
                "Ref":"SyncNodeInstanceType"
@@ -355,7 +355,20 @@
                },
                {
                   "Key":"Name",
-                  "Value":"sync-node"
+                  "Value":{
+                     "Fn::Join":[
+                        "-",
+                        [
+                           {
+                              "Ref":"Environment"
+                           },
+                           "sync-node",
+                           {
+                              "Ref":"NodeNumber"
+                           }
+                        ]
+                     ]
+                  }
                },
                {
                   "Key":"Services",
@@ -407,6 +420,60 @@
             },
             "Timeout":"900"
          }
+      },
+      "SyncNodeDNSRecord":{
+         "Type":"AWS::Route53::RecordSet",
+         "DependsOn":"SyncNodeInstance",
+         "Properties":{
+            "HostedZoneName":{
+               "Fn::FindInMap":[
+                  "EnvironmentMap",
+                  {
+                     "Ref":"Environment"
+                  },
+                  "DNSZone"
+               ]
+            },
+            "Name":{
+               "Fn::Join":[
+                  "",
+                  [
+                     "sync-",
+                     {
+                        "Ref":"NodeNumber"
+                     },
+                     "-",
+                     {
+                        "Ref":"AWS::Region"
+                     },
+                     ".",
+                     {
+                        "Fn::FindInMap":[
+                           "EnvironmentMap",
+                           {
+                              "Ref":"Environment"
+                           },
+                           "DNSZone"
+                        ]
+                     }
+                  ]
+               ]
+            },
+            "Type":"A",
+            "TTL":"30",
+            "SetIdentifier":{
+               "Ref":"AWS::StackName"
+            },
+            "Weight":10,
+            "ResourceRecords":[
+               {
+                  "Fn::GetAtt":[
+                     "SyncNodeInstance",
+                     "PublicIp"
+                  ]
+               }
+            ]
+         }
       }
    },
    "Outputs":{
@@ -418,6 +485,15 @@
                "PublicDnsName"
             ]
          }
+      },
+      "SyncNodePublicIp":{
+          "Description":"Public IP address of the Sync Node",
+          "Value":{
+              "Fn::GetAtt":[
+                 "SyncNodeInstance",
+                 "PublicIp"
+              ]
+           }
       }
    }
 }

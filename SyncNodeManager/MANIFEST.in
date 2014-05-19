@@ -1,0 +1,2 @@
+recursive-include docs *.txt *.yaml
+include node_manager/*.json

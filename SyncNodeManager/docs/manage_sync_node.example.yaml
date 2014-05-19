@@ -1,0 +1,27 @@
+---
+  dbpass: dbpassword-goes-here
+  token_secret:
+    - master-token-server-secrets-go-here
+  wait_interval: 30
+  ami_map:
+    us-east-1: ami-7d938f14
+    us-west-2: ami-f0244ec0
+  security_groups:
+    - open-everything
+  key_pair_name: 20130730-svcops-base-key-dev
+  instance_type: c1.xlarge
+  cloudformation_template_filename: conf/sync-node.json
+  capacity_map:
+    c1.xlarge : 160000
+    m1.xlarge :  80000
+    c3.2xlarge : 30000
+    c3.4xlarge : 60000
+    c3.8xlarge : 120000
+    default : 30000
+  defaults:
+    dbserver: tokenserver.123456789012.us-east-1.rds.amazonaws.com
+    dbuser: tokenserver
+    dbname: token_stage
+    region: us-east-1
+    environment: stage
+    serviceid: 1
