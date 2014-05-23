@@ -69,6 +69,12 @@
          "AllowedPattern":"ami-[0-9a-f]{8}",
          "ConstraintDescription":"must be a valid AMI ID in the form of ami-56789abc",
          "Type":"String"
+      },
+      "AvailabilityZone":{
+         "Description":"Availability Zone to launch the instance in",
+         "AllowedPattern":"[a-z]{2}-[a-z]*-[0-9][a-z]",
+         "ConstraintDescription":"must be a valid availability zone in the form of us-west-2a",
+         "Type":"String"
       }
    },
    "Mappings":{
@@ -177,17 +183,17 @@
                               "S3:GetObject"
                            ],
                            "Resource":[
-	                           "arn:aws:s3:::net.mozaws.ops.rpmrepo-protected/*",
-	                           "arn:aws:s3:::net.mozaws.ops.rpmrepo-puppet/*",
-	                           "arn:aws:s3:::net.mozaws.ops.hiera-secrets/common.yaml",
-	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]},".",{"Ref":"Environment"},".",{"Ref":"AWS::StackName"},".","yaml"]]},
-	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]},".",{"Ref":"Environment"},".","yaml"]]},
-	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]},".","yaml"]]},
-	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Ref":"Environment"},".",{"Ref":"AWS::StackName"},".","yaml"]]},
-	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Ref":"Environment"},".","yaml"]]},
-	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".","yaml"]]},
-	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/env/",{"Ref":"Environment"},".",{"Ref":"AWS::StackName"},".","yaml"]]},
-	                           {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/env/",{"Ref":"Environment"},".","yaml"]]}
+                               "arn:aws:s3:::net.mozaws.ops.rpmrepo-protected/*",
+                               "arn:aws:s3:::net.mozaws.ops.rpmrepo-puppet/*",
+                               "arn:aws:s3:::net.mozaws.ops.hiera-secrets/common.yaml",
+                               {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]},".",{"Ref":"Environment"},".",{"Ref":"AWS::StackName"},".","yaml"]]},
+                               {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]},".",{"Ref":"Environment"},".","yaml"]]},
+                               {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/type/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Fn::FindInMap":[ "VariableMap", "Stack", "Type" ]},".","yaml"]]},
+                               {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Ref":"Environment"},".",{"Ref":"AWS::StackName"},".","yaml"]]},
+                               {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".",{"Ref":"Environment"},".","yaml"]]},
+                               {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/app/",{"Fn::FindInMap":[ "VariableMap", "Stack", "App" ]},".","yaml"]]},
+                               {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/env/",{"Ref":"Environment"},".",{"Ref":"AWS::StackName"},".","yaml"]]},
+                               {"Fn::Join":["",["arn:aws:s3:::net.mozaws.ops.hiera-secrets/env/",{"Ref":"Environment"},".","yaml"]]}
                            ]
                         },
                         {
@@ -307,6 +313,9 @@
             }
          },
          "Properties":{
+            "AvailabilityZone":{
+                "Ref":"AvailabilityZone"
+            },
             "IamInstanceProfile":{
                "Ref":"SyncNodeInstanceProfile"
             },
